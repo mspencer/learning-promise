@@ -1,0 +1,129 @@
+// fetch nearby shop
+const fetchNearByShop = async ({longi, lat}) => {
+  console.log(`Locating the nearby shop at (${longi} ${lat})`);
+  return new Promise((resolve, reject) => {
+    setTimeout(function() {
+      const response = {shopId: 's-123',};
+      resolve(response.shopId);
+    }, 1000);
+  });
+};
+
+// fetch available pizzas
+const fetchAvailablePizzas = async ({shopId}) => {
+  console.log(`Getting Pizzas List from the shop ${shopId}...`);
+  return new Promise((resolve,reject) => {
+    setTimeout(function() {
+      const response = {pizzas:[{type:'veg', name:'margarita', id:'pv-123'}, {type:'non-veg', name:'pepperoni slice', id:'pnv-124'}]};
+      resolve(response);
+    }, 1000);
+  });
+};
+
+// check if my pizza exists in the shop
+let getMyPizza = async (result, type, name) => {
+  let pizzas = result.pizzas;
+  console.log('Got the pizza list: ', pizzas);
+  let myPizza = pizzas.find((pizza) => {
+    return (pizza.type == type && pizza.name == name);
+  });
+  return new Promise((resolve,reject) => {
+    if(myPizza) {
+      console.log(`Found the customer pizza ${myPizza.name}`);
+      resolve(myPizza);
+    } else {
+      reject(new Error(`Sorry we don't have ${type} ${name} pizza. Do you want anything else?`));
+    }
+  });
+};
+
+// if my pizza exists in the shop - fetch beverage
+const fetchBeverages = async ({pizzaId}) => {
+  console.log(`Getting beverages for the pizza ${pizzaId}...`);
+  return new Promise((resolve,reject) => {
+    setTimeout(function() {
+      const response = {id:"b-10",name:"cola"};
+      resolve(response);
+    }, 1000);
+  });
+};
+
+// create order
+let create = async (endpoint,payload) => {
+  
+  return (function() {
+    console.log('CREATECREATECREATE');
+    console.log(endpoint);
+    console.log(payload);
+    if(endpoint.includes("/api/pizzahub/order")) {
+      console.log('Placing the pizza order with...', payload);
+      const {type,name,beverage} = payload;
+      return new Promise((resolve,reject) => {
+        setTimeout(function() {
+          console.log('MEMEMEMEM');
+          console.log(type);
+          console.log(name);
+          console.log(beverage);
+          const response = {"success":true, "message":`The ${type} ${name} pizza order with ${beverage} has been placed successfully`};
+          console.log(response);
+          console.log("");
+          resolve(response);
+        }, 1);
+      });
+    }
+  })(endpoint,payload);
+  
+};
+
+// combine all fetch functions
+async function fetch(endpoint,payload) {
+  console.log('>>>>');
+  console.log(payload);
+  console.log(endpoint);
+  if(endpoint.includes("/api/pizzahub/shop")) {
+    return fetchNearByShop(payload);
+  } else if(endpoint.includes("/api/pizzahub/pizza")) {
+    return fetchAvailablePizzas(payload);
+  } else if(endpoint.includes("/api/pizzahub/beverages")) {
+    return fetchBeverages(payload);
+  }
+}
+
+// order pizza function
+async function orderPizza(type,name) {
+  
+  try {
+    // fetch the nearby pizza shop
+    const shopId = await fetch("/api/pizzahub/shop", {
+      'lang':38.8951,
+      'lat':-77.0364,
+    });
+    
+    // fetch all available pizzas
+    const allPizzas = await fetch("/api/pizzahub/pizza", {
+      'shopId':shopId,
+    });
+    
+    // check the availability of the selected pizza
+    const pizza = await getMyPizza(allPizzas, type, name);
+    
+    // fetch the relevant beverage
+    const beverage = await fetch("/api/pizzahub/beverages", {
+      'pizzaId':pizza.id,
+    });
+    
+    // create the order
+    const result = await create("/api/pizzahub/order", {
+          'beverage':beverage.name,
+          'name':name,
+          'type':type,
+    });
+    console.log('result : ', result);
+    console.log('result.message : ', result.message);
+  } catch(error) {
+    console.error(error.message);
+  }
+}
+
+// order pizza here 
+orderPizza('non-veg', 'pepperoni slice');
